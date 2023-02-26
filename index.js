@@ -137,7 +137,7 @@ async function processing(auth_obj) {
         for (let j in event_list) {
           if (spread_list[i].start === event_list[j].start) {
             console.log("같은 날짜의 데이터가 있음. ========== o");
-            if (spread_list[i].summary !== event_list[j].summary) {
+            if (spread_list[i].summary.toString() !== event_list[j].summary.toString()) {
               console.log("spread_list - summary : ", spread_list[i].summary);
               console.log("event_list - summary : ", event_list[j].summary);
 
@@ -146,6 +146,8 @@ async function processing(auth_obj) {
                 eventId: event_list[j].eventId,
               };
               updateEvent(auth, obj, spread_list[i].summary);
+            } else {
+              console.log("같은 내용의 이벤트 입니다.");
             }
           } else {
             //같은 날짜의 데이터가 없음
@@ -156,9 +158,9 @@ async function processing(auth_obj) {
             if (spread_list[i].summary !== "") {
               setTimeout(() => {
                 if (spread_list[i].summary !== event_list[j].summary) {
-                  addEvent(auth, obj);
+                  //addEvent(auth, obj);
                 }
-              }, 1000);
+              }, 3000);
             }
           }
         }
@@ -167,7 +169,7 @@ async function processing(auth_obj) {
         console.log("스프레드에 있는 데이터 모두 넣기 : ", i);
       }
     }
-  }, 3000);
+  }, 10000);
 
   obj = {
     summary: "test0",
