@@ -132,55 +132,55 @@ async function processing(auth_obj) {
     //--다르다.-->그러면 업데이트 해야함.
     //없다. -> 그러면 그냥 insert 이벤트 하기.
 
+    //스프레드 시트의 데이터 갯수만큼 반복한다.
     for (let i in spread_list) {
-      if (event_list.length != 0) {
-        for (let j in event_list) {
-          if (spread_list[i].start === event_list[j].start) {
-            console.log("같은 날짜의 데이터가 있음. ========== o");
-            if (spread_list[i].summary.toString() !== event_list[j].summary.toString()) {
-              console.log("spread_list - summary : ", spread_list[i].summary);
-              console.log("event_list - summary : ", event_list[j].summary);
+      setTimeout(() => {
+        //이벤트의 데이터가 0이 아닐때
+        if (event_list.length != 0) {
+          //이벤트 갯수만큼 반복한다.
+          for (let j in event_list) {
+            //스프레드의 데이터 하나가 이벤트 데이터 하나의 날짜가 같을때
+            if (spread_list[i].start === event_list[j].start) {
+              //스프레드의 데이터의 내용과 이벤트 데이터의 내용과 같을때
+              if (spread_list[i].summary.toString() === event_list[j].summary.toString()) {
+                console.log("========================================================같은 내용의 이벤트 입니다.");
+                console.log(spread_list[i].summary.toString());
+                console.log(event_list[j].summary.toString());
+              } else {
+                console.log("spread_list - summary : ", spread_list[i].summary);
+                console.log("event_list - summary : ", event_list[j].summary);
 
-              let obj = {
-                start: spread_list[i].start,
-                eventId: event_list[j].eventId,
-              };
-              updateEvent(auth, obj, spread_list[i].summary);
-            } else {
-              console.log("같은 내용의 이벤트 입니다.");
+                let obj = {
+                  start: spread_list[i].start,
+                  eventId: event_list[j].eventId,
+                };
+                updateEvent(auth, obj, spread_list[i].summary);
+              }
             }
-          } else {
-            //같은 날짜의 데이터가 없음
-            let obj = {
-              summary: spread_list[i].summary,
-              date: spread_list[i].start,
-            };
-            if (spread_list[i].summary !== "") {
-              setTimeout(() => {
-                if (spread_list[i].summary !== event_list[j].summary) {
-                  //addEvent(auth, obj);
-                }
-              }, 3000);
+            //if (spread_list[i].start !== event_list[j].start && spread_list[i].summary !== "")
+            else {
+              //같은 날짜의 데이터가 없음
+              let obj = {
+                summary: spread_list[i].summary,
+                date: spread_list[i].start,
+              };
+
+              // if (spread_list[i].summary.toString() !== event_list[j].summary.toString()) {
+              //   // console.log("여기에서 이벤트 넣는거 실행해야 하는데???");
+              //   // addEvent(auth, obj);
+              // }
             }
           }
+        } else {
+          //스프레드에 있는 데이터 모두 넣기
+          console.log("스프레드에 있는 데이터 모두 넣기 : ", i);
         }
-      } else {
-        //스프레드에 있는 데이터 모두 넣기
-        console.log("스프레드에 있는 데이터 모두 넣기 : ", i);
-      }
+      }, 2000);
     }
-  }, 10000);
-
-  obj = {
-    summary: "test0",
-    date: "2023-02-4",
-  };
-
-  //addEvent(auth, obj);
+  }, 3000);
 }
-console.log("=============================================================================");
+console.log("=================================================================================================");
 authorize().then(processing).catch(console.error);
-//getSpreadData();
 
 //====================================================================//====================================================================
 //====================================================================//====================================================================
@@ -216,14 +216,11 @@ async function listEvents(auth) {
     event_arr.push(obj);
     //console.log(`${start} - ${end} - ${event.summary}`);
   });
-  //console.log(event_arr);
   return event_arr;
 }
 
 async function addEvent(auth, obj) {
   const calendar = google.calendar({ version: "v3", auth });
-
-  console.log("addEvent : 동작 =========================");
 
   let date = obj.date;
   let summary = obj.summary;
@@ -231,31 +228,18 @@ async function addEvent(auth, obj) {
   const eventDate = new Date(date);
 
   const event = {
-    summary: summary, // 이벤트 제목
+    summary: summary,
     start: {
-      date: eventDate.toISOString().slice(0, 10), // 이벤트 시작 날짜 (YYYY-MM-DD 형식)
-      timeZone: "Asia/Seoul", // 이벤트 시간대
+      date: eventDate.toISOString().slice(0, 10),
+      timeZone: "Asia/Seoul",
     },
     end: {
-      date: eventDate.toISOString().slice(0, 10), // 이벤트 종료 날짜 (YYYY-MM-DD 형식)
-      timeZone: "Asia/Seoul", // 이벤트 시간대
+      date: eventDate.toISOString().slice(0, 10),
+      timeZone: "Asia/Seoul",
     },
-    // allDay 속성 추가
     allDay: true,
   };
 
-  // const event = {
-  //   summary: obj.summary,
-  //   start: {
-  //     dateTime: eventDate.toISOString().slice(0, 10),
-  //     timeZone: "Asia/Seoul",
-  //   },
-  //   end: {
-  //     dateTime: eventDate.toISOString().slice(0, 10),
-  //     timeZone: "Asia/Seoul",
-  //   },
-  //   allDay: true,
-  // };
   calendar.events.insert(
     {
       auth: auth,
@@ -267,7 +251,7 @@ async function addEvent(auth, obj) {
         console.log("There was an error contacting the Calendar service: " + err);
         return;
       }
-      console.log("Event created: %s", event.htmlLink);
+      console.log("Event created: %s", event.data.summary);
     }
   );
 }
@@ -276,31 +260,22 @@ async function updateEvent(auth, obj, get_summary) {
   console.log("updateEvent : 동작 ==================");
   const calendar = google.calendar({ version: "v3", auth });
 
-  let date = obj.start; // "2023-02-02"
+  let date = obj.start;
   let summary = get_summary;
   const eventDate = new Date(date);
 
   const event = {
     summary: `${summary}`,
     start: {
-      date: eventDate.toISOString().slice(0, 10), // 이벤트 시작 날짜 (YYYY-MM-DD 형식)
-      timeZone: "Asia/Seoul", // 이벤트 시간대
+      date: eventDate.toISOString().slice(0, 10),
+      timeZone: "Asia/Seoul",
     },
     end: {
-      date: eventDate.toISOString().slice(0, 10), // 이벤트 종료 날짜 (YYYY-MM-DD 형식)
-      timeZone: "Asia/Seoul", // 이벤트 시간대
+      date: eventDate.toISOString().slice(0, 10),
+      timeZone: "Asia/Seoul",
     },
     // allDay 속성 추가
     allDay: true,
-    // recurrence: ["RRULE:FREQ=DAILY;COUNT=2"],
-    // attendees: [{ email: "lpage@example.com" }, { email: "sbrin@example.com" }],
-    // reminders: {
-    //   useDefault: false,
-    //   overrides: [
-    //     { method: "email", minutes: 24 * 60 },
-    //     { method: "popup", minutes: 10 },
-    //   ],
-    // },
   };
 
   await calendar.events.update({
