@@ -111,56 +111,8 @@ async function processing(auth_obj) {
   });
 
   setTimeout(() => {
-    console.log(event_list[0]);
-    console.log(spread_list[0]);
-
-    //스프레드의 데이터 하나가 이벤트데이터들에 있는지 반복해서 찾는다.
-    //있다. -> 같은 날짜가 있으면 summary가 같은지 확인한다.
-    //--같다.--> 같으면 그냥 넘김.
-    //--다르다.-->그러면 업데이트 해야함.
-    //없다. -> 그러면 그냥 insert 이벤트 하기.
-
-    //================================= Ver.1 ================================================================
-    /*
-    //스프레드 시트의 데이터 갯수만큼 반복한다.
-    for (let i in spread_list) {
-      setTimeout(() => {
-        //이벤트의 데이터가 0이 아닐때
-        if (event_list.length != 0) {
-          //이벤트 갯수만큼 반복한다.
-          for (let j in event_list) {
-            //스프레드의 데이터 하나가 이벤트 데이터 하나의 날짜가 같을때
-            if (spread_list[i].start === event_list[j].start) {
-              //스프레드의 데이터의 내용과 이벤트 데이터의 내용과 같을때
-              if (spread_list[i].summary.toString() === event_list[j].summary.toString()) {
-                console.log("========================================================같은 내용의 이벤트 입니다.");
-                console.log(spread_list[i].summary.toString());
-                console.log(event_list[j].summary.toString());
-              } else {
-                console.log("spread_list - summary : ", spread_list[i].summary);
-                console.log("event_list - summary : ", event_list[j].summary);
-
-                let obj = {
-                  start: spread_list[i].start,
-                  eventId: event_list[j].eventId,
-                };
-                updateEvent(auth, obj, spread_list[i].summary);
-              }
-            } else {
-              //같은 날짜의 데이터가 없음
-              let obj = {
-                summary: spread_list[i].summary,
-                date: spread_list[i].start,
-              };
-            }
-          }
-        } else {
-          //스프레드에 있는 데이터 모두 넣기
-          console.log("스프레드에 있는 데이터 모두 넣기 : ", i);
-        }
-      }, 2000);
-    }
-*/
+    //console.log(event_list[0]);
+    //console.log(spread_list[0]);
 
     //================================= Ver.2 ===============================================================
 
@@ -170,52 +122,72 @@ async function processing(auth_obj) {
     //--다르다.-->그러면 업데이트 해야함.
     //없다. -> 그러면 그냥 insert 이벤트 하기.
 
-    console.log("====================================Ver. 2 ========================================");
-    //for (let i in spread_list) {
-    let i = 0;
-    let spreadsheet_date = spread_list[i].start.toString(); //스프레드시트 첫번째 인덱스의 날짜가 나옴
-    let days = parseInt(spreadsheet_date.slice(-2)); //몇일인지 숫자 값으로 나옴
-    let result;
+    for (let i in spread_list) {
+      let spreadsheet_date = spread_list[i].start.toString(); //스프레드시트 첫번째 인덱스의 날짜가 나옴
+      let days = parseInt(spreadsheet_date.slice(-2)); //몇일인지 숫자 값으로 나옴
 
-    setTimeout(() => {
-      if (days <= 31) {
-        checkEventExist(auth, spreadsheet_date).then((res) => {
-          //날짜값과 일치하는 날짜의 이벤트가 있는지 확인
+      setTimeout(() => {
+        if (days <= 31) {
+          checkEventExist(auth, spreadsheet_date).then((result) => {
+            //날짜값과 일치하는 날짜의 이벤트가 있는지 확인
 
-          //해당 날짜에 이벤트가 있다. 없다.
-          if (res) {
-            console.log("이 날짜에는 이벤트가 존재합니다.");
-            for (let j in event_list) {
+            //해당 날짜에 이벤트가 있다. 없다.
+            let res;
+            if (result.length == 0) {
+              res = false;
+            } else {
+              res = true;
+            }
+
+            if (res) {
+              //console.log("이 날짜에는 이벤트가 존재합니다.");
+
               //summary가 같은지 확인한다.
-              if (spread_list[i].start === event_list[j].start) {
-                if (spread_list[i].summary.toString() !== event_list[j].summary.toString()) {
+              let spread_summary = spread_list[i].summary;
+              let event_summary = result[0].summary;
+              if (spread_summary === event_summary) {
+              } else {
+                if (spread_summary === "" || spread_summary === undefined) {
+                  //해당 날짜의 이벤트를 삭제하기
+                  let date = spread_list[i].start;
+                  checkEventExist(auth, date).then(async (events) => {
+                    const calendar = google.calendar({ version: "v3", auth });
+                    //console.log(events[0]);
+                    // await calendar.events.delete({
+                    //   calendarId: "primary", // 이벤트가 있는 캘린더의 ID
+                    //   eventId: events[0].id,
+                    //   auth: auth,
+                    // });
+                  });
+                } else {
                   //같지 않을 경우
                   let obj = {
                     start: spread_list[i].start,
-                    eventId: event_list[j].eventId,
+                    eventId: result[0].id,
                   };
                   updateEvent(auth, obj, spread_list[i].summary);
                 }
               }
+            } else {
+              //console.log("이 날짜에는 이벤트가 존재하지 않습니다.");
+              let obj = {
+                date: spread_list[i].start,
+                summary: spread_list[i].summary,
+              };
+              if (spread_list[i].summary !== "") {
+                addEvent(auth, obj);
+              }
             }
-          } else {
-            console.log("이 날짜에는 이벤트가 존재하지 않습니다.");
-            let obj = {
-              date: spread_list[i].start,
-              summary: spread_list[i].summary,
-            };
-            if (spread_list[i].summary !== "" && spread_list[i].summary !== undefined) {
-              addEvent(auth, obj);
-            }
-          }
-        });
-      }
-    }, i * 1000);
-    //}
+          });
+        }
+      }, i * 1000);
+    }
   }, 3000);
 }
 console.log("=================================================================================================");
-authorize().then(processing).catch(console.error);
+setInterval(() => {
+  authorize().then(processing).catch(console.error);
+}, 60000);
 
 //====================================================================//====================================================================
 //====================================================================//====================================================================
@@ -251,7 +223,6 @@ async function listEvents(auth) {
       eventId: eventId,
     };
     event_arr.push(obj);
-    //console.log(`${start} - ${end} - ${event.summary}`);
   });
   return event_arr;
 }
@@ -274,13 +245,7 @@ async function checkEventExist(auth, date) {
   });
 
   const events = response.data.items;
-  if (events.length === 0) {
-    //console.log(`${date}에는 이벤트가 없습니다.`);
-    return false;
-  } else {
-    //console.log(`${date}에는 이벤트가 있습니다.`);
-    return true;
-  }
+  return events;
 }
 
 function getMonth() {
