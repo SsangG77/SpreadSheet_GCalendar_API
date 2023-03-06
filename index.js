@@ -151,15 +151,34 @@ async function processing(auth_obj) {
                 if (spread_summary === "" || spread_summary === undefined) {
                   //해당 날짜의 이벤트를 삭제하기
                   let date = spread_list[i].start;
-                  checkEventExist(auth, date).then(async (events) => {
-                    const calendar = google.calendar({ version: "v3", auth });
-                    //console.log(events[0]);
-                    // await calendar.events.delete({
-                    //   calendarId: "primary", // 이벤트가 있는 캘린더의 ID
-                    //   eventId: events[0].id,
-                    //   auth: auth,
-                    // });
-                  });
+                  console.log(date);
+                  const calendar = google.calendar({ version: "v3", auth });
+
+                  calendar.events
+                    .list({
+                      calendarId: "primary",
+                      timeMin: `${date}T00:00:00Z`,
+                      timeMax: `${date}T23:59:59Z`,
+                    })
+                    .then(function (response) {
+                      var events = response.data.items;
+                      for (var i = 0; i < events.length; i++) {
+                        var event = events[i];
+                        calendar.events
+                          .delete({
+                            calendarId: "primary",
+                            eventId: event.id,
+                          })
+                          .then(
+                            function (response) {
+                              console.log("Event deleted: " + event.summary);
+                            },
+                            function (error) {
+                              console.error("Error deleting event: " + error);
+                            }
+                          );
+                      }
+                    });
                 } else {
                   //같지 않을 경우
                   let obj = {
